@@ -23,38 +23,35 @@ app.get("/api/hello", function (req, res) {
   res.json({ greeting: "hello API" });
 });
 
-app.get("/api/:date?", getDate);
+app.get("/api/:date?", (req, res) => {
+  const input = req.params.date;
 
-const getDate = (req, res) => {
-  let input = req.params.date;
+  let date;
 
-  let isValidDate = Date.parse(input);
-
-  let isValidUnixNumber = /^[0-9]+$/.test(input);
-
-  let isEmpty = input == "" || input == null;
-
-  //3.create another variables used in if-else
-  let unix_output = 0;
-  let utc_output = "";
-
-  if (isValidDate) {
-    unix_output = new Date(input);
-    utc_output = unix_output.toUTCString();
-    // valueOf used for getting a variable back to primitive type
-    return res.json({ unix: unix_output.valueOf(), utc: utc_output });
-  } else if (isNaN(isValidDate) && isValidUnixNumber) {
-    unix_output = new Date(parseInt(input));
-    utc_output = unix_output.toUTCString();
-    return res.json({ unix: unix_output.valueOf(), utc: utc_output });
-  } else if (isEmpty) {
-    unix_output = new Date();
-    utc_output = unix_output.toUTCString();
-    return res.json({ unix: unix_output.valueOf(), utc: utc_output });
-  } else {
-    res.json({ error: "Invalid Date" });
+  // Handle empty input (current date)
+  if (!input) {
+    date = new Date();
   }
-};
+  // Handle unix timestamp (all digits)
+  else if (/^\d+$/.test(input)) {
+    date = new Date(parseInt(input));
+  }
+  // Handle ISO date strings or other valid formats
+  else {
+    date = new Date(input);
+  }
+
+  // Check if the date is valid
+  if (isNaN(date.getTime())) {
+    return res.json({ error: "Invalid Date" });
+  }
+
+  // Return the response
+  res.json({
+    unix: date.getTime(),
+    utc: date.toUTCString(),
+  });
+});
 
 // Listen on port set in environment variable or default to 3000
 var listener = app.listen(process.env.PORT || 3000, function () {
